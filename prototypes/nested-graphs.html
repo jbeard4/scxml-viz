@@ -36,7 +36,8 @@
     Next question is:
         how do we run the force algorithm so as to take into account the width/height of non-point elements?  
 
-    TODO: padding
+    Now make it recursive: support arbitrary nested subgraphs.
+
 -->
 <html>
   <head>
@@ -49,11 +50,11 @@ circle {
 }
 
 line {
-  stroke: #999;
+  stroke: #FFF;
 }
 
 rect {
-    fill : none;
+    fill : grey;
     stroke : black;
     r : 10px;
 }
