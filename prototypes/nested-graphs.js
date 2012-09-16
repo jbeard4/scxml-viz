@@ -33,12 +33,11 @@ function generateStronglyConnectedLinks(nodes){
     }).reduce(function(a,b){return a.concat(b);},[]);
 }
 
-function makeSubGraph(json,parent){
+function makeSubGraph(json,parent,parentTickCb){
 
     var force = d3.layout.force()
         .charge(-120)
-        .linkDistance(30)
-        .size([100,100]);
+        .linkDistance(30);
 
     var g = parent.append('g').attr('class','sub');
 
@@ -72,6 +71,8 @@ function makeSubGraph(json,parent){
                 .attr("y1", function(d) { return d.source.y; })
                 .attr("x2", function(d) { return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
+
+        parentTickCb();
     }
 
     console.log('subgraph g',g);
@@ -88,36 +89,41 @@ function makeParentGraph(graphs){
 
     var g = svg.append('g');
 
-    var graphNodes = graphs.map(function(graph){return makeSubGraph(graph,g);});
+    var graphNodes = graphs.map(function(graph){
+        var parentGNode = g.append('g').attr('class','parent');
+        var boundingRect = parentGNode.append('rect').attr('class','boundingRect');
+
+        //we get back <g> containing module contents
+        var subGraphContent = makeSubGraph(graph,parentGNode,function(){
+            //tick listener
+            var rect = subGraphContent.node().getBBox(); 
+            //console.log('tick',rect); 
+            boundingRect.attr("x",rect.x); 
+            boundingRect.attr("y",rect.y); 
+            boundingRect.attr("width",rect.width); 
+            boundingRect.attr("height",rect.height); 
+        });
+
+        return parentGNode; 
+    });
     //var graphNodes = graphs.map(function(graph){return {};});
 
     console.log('graphNodes',graphNodes);
 
-    var updateNodes = g.selectAll('g.sub')
-                .data(graphNodes);
+    var updateNodes = g.selectAll('g.parent')
+                        .data(graphNodes);
 
     var enter = updateNodes.enter();
 
     console.log('update',updateNodes);
     console.log('enter',enter);
 
-    updateNodes.append('rect')
-        .attr('width','100px')
-        .attr('height','100px');
+    //updateNodes.append('rect');
+    //    .attr('width','100px')
+    //    .attr('height','100px');
 
     console.log('updateNodes',updateNodes);
 
-    /*
-    g.selectAll('g')
-        .append('rect')
-        .attr('width','100px')
-        .attr('height','100px');
-    
-    nodes.forEach(function(node){
-        node.append('rect')
-    });
-    */
-                
     //var links = generateRandomLinkGraph(graphNodes,1);
     var links = generateStronglyConnectedLinks(graphNodes);
 
