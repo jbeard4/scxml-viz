@@ -129,11 +129,9 @@ function makeParentGraph(graphs){
 
     console.log('links',links); 
 
-    /*
-    var link = g.selectAll("line")
+    var link = g.selectAll("line.parent")
             .data(links)
-        .enter().append("line");
-    */
+        .enter().append("line").attr('class','parent');
 
     updateNodes.call(force.drag);
 
@@ -146,12 +144,10 @@ function makeParentGraph(graphs){
     function tick() {
         updateNodes.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
-        /*
         link.attr("x1", function(d) { return d.source.x; })
                 .attr("y1", function(d) { return d.source.y; })
                 .attr("x2", function(d) { return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
-        */
     }
 
 }
