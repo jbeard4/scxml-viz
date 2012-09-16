@@ -82,26 +82,59 @@ function makeSubGraph(json,parent,parentTickCb){
 
 function makeParentGraph(graphs){
 
+    var INITIAL_LINK_DISTANCE = 20,
+        LINK_DISTANCE_PADDING = 10;
+
     var force = d3.layout.force()
         .charge(-120)
-        .linkDistance(150)
+        .linkDistance(INITIAL_LINK_DISTANCE)
         .size([width, height]);
 
     var g = svg.append('g');
 
-    var graphNodes = graphs.map(function(graph){
+    //used to cache bounding boxes to update force.linkDistance
+    var bboxes = [], maxDimension = INITIAL_LINK_DISTANCE;
+
+    function updateMaxDimension(dim){
+        console.log('updating max dimension from', maxDimension, 'to',dim); 
+        maxDimension = dim;
+        force.linkDistance(maxDimension + LINK_DISTANCE_PADDING);
+        force.stop();
+        force.start();
+    }
+
+    var graphNodes = graphs.map(function(graph,i){
         var parentGNode = g.append('g').attr('class','parent');
         var boundingRect = parentGNode.append('rect').attr('class','boundingRect');
+
+        bboxes.push(INITIAL_LINK_DISTANCE);
 
         //we get back <g> containing module contents
         var subGraphContent = makeSubGraph(graph,parentGNode,function(){
             //tick listener
-            var rect = subGraphContent.node().getBBox(); 
+            var bbox = subGraphContent.node().getBBox(); 
             //console.log('tick',rect); 
-            boundingRect.attr("x",rect.x); 
-            boundingRect.attr("y",rect.y); 
-            boundingRect.attr("width",rect.width); 
-            boundingRect.attr("height",rect.height); 
+            
+            var maxDim = Math.ceil(bbox.width > bbox.height ? bbox.width : bbox.height);
+            if(maxDim > maxDimension){
+                //if we're greater than the maxDim, then update the maxDim
+                updateMaxDimension(maxDim);
+            }else if(maxDim < maxDimension){
+                var prevMaxDim = bboxes[i];
+                if(prevMaxDim === maxDimension){
+                    bboxes[i] = maxDim;     //update here, now, so we can just do Math.max.apply
+                    //otherwise, if he had the max dimension, so update the max dimension
+                    updateMaxDimension(Math.max.apply(null,bboxes));
+                }
+            }
+
+            //update bboxes[i]
+            bboxes[i] = maxDim;
+
+            boundingRect.attr("x",bbox.x); 
+            boundingRect.attr("y",bbox.y); 
+            boundingRect.attr("width",bbox.width); 
+            boundingRect.attr("height",bbox.height); 
         });
 
         return parentGNode; 
@@ -112,17 +145,6 @@ function makeParentGraph(graphs){
 
     var updateNodes = g.selectAll('g.parent')
                         .data(graphNodes);
-
-    var enter = updateNodes.enter();
-
-    console.log('update',updateNodes);
-    console.log('enter',enter);
-
-    //updateNodes.append('rect');
-    //    .attr('width','100px')
-    //    .attr('height','100px');
-
-    console.log('updateNodes',updateNodes);
 
     //var links = generateRandomLinkGraph(graphNodes,1);
     var links = generateStronglyConnectedLinks(graphNodes);
