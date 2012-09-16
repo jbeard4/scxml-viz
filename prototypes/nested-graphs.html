@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<!--
+    Now:
+        decide what shape the data takes
+
+    This will basically be two force graphs. They will interact in interesting ways.
+        So we have a seperate node and link declaration for each subgraph. For this example, will be 2.  
+        On tick, the outer graph must ask its contents for its bounding box, and resize based on that. Kind of expensive to ask for aggregate bbox, though, evne though it's easy to do...  So maybe we ned to be more clever about it and use a delta. Or maybe it's possible to use css to draw a rect around a group... I don't think so though.
+        OK, well forget abou tthat for now. Simplifying assumption: use fixed widths and heights for everything, at each level.   
+        For aggregates, we use the form:
+        <g>
+            <rect class=".bounds"/>
+            <g>
+                subgraph contents here
+            </g>
+        </g>
+    
+
+    Question:
+        Can we do force layout on stuff with nonzero width and height properties...?
+-->
+<html>
+  <head>
+    <title>Force-Directed Layout</title>
+    <script type="text/javascript" src="../d3.v2.js"></script>
+    <style type="text/css">
+
+circle {
+  stroke-width: 1.5px;
+}
+
+line {
+  stroke: #999;
+}
+
+rect {
+    fill : none;
+    stroke : black;
+    r : 10px;
+}
+
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript" src="nested-graphs.js"></script>
+  </body>
+</html>
+
