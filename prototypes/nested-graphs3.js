@@ -1,8 +1,8 @@
 var STATE_NAMES = ['scxml','state','parallel','initial','final'];
 
-var INITIAL_LINK_DISTANCE = 20,
-    LINK_DISTANCE_PADDING = 20,
-    BBOX_PADDING = 10;
+var BBOX_PADDING = 10,
+    INITIAL_LINK_DISTANCE = 20,
+    LINK_DISTANCE_PADDING = 10 + BBOX_PADDING * 2;
 
 function generateStronglyConnectedLinks(nodes){
     return nodes.map(function(node){
@@ -22,9 +22,9 @@ function toGraph(graphContainerNode,scxmlNode,parentTick,size){
     var bboxes = [], maxDimension = INITIAL_LINK_DISTANCE;
 
     function updateMaxDimension(dim){
-        console.log('updating max dimension from', maxDimension, 'to',dim); 
+        //console.log('updating max dimension from', maxDimension, 'to',dim); 
         maxDimension = dim;
-        force.linkDistance(maxDimension + LINK_DISTANCE_PADDING + BBOX_PADDING * 2);
+        force.linkDistance(maxDimension + LINK_DISTANCE_PADDING);
         force.start();
     }
 
@@ -50,11 +50,10 @@ function toGraph(graphContainerNode,scxmlNode,parentTick,size){
         bboxRect[0].forEach(function(rect,i){
             var bbox = graphContents[0][i].getBBox();
 
-            var maxDim = Math.ceil(bbox.width > bbox.height ? bbox.width : bbox.height);
+            var maxDim = Math.ceil(bbox.width > bbox.height ? bbox.width : bbox.height) + LINK_DISTANCE_PADDING;
             if(maxDim > maxDimension){
                 //if we're greater than the maxDim, then update the maxDim
                 updateMaxDimension(maxDim);
-                true;
             }else if(maxDim < maxDimension){
                 var prevMaxDim = bboxes[i];
                 if(prevMaxDim === maxDimension){
@@ -109,8 +108,8 @@ function toGraph(graphContainerNode,scxmlNode,parentTick,size){
 d3.xml('test.scxml','application/xml',function(doc){
     console.log('doc',doc);
 
-    var width = 960,
-        height = 500;
+    var width = 1000,
+        height = 1000;
 
     var svg = d3.select("body").append("svg")
         .attr("width", width)
