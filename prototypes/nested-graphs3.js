@@ -1,8 +1,32 @@
 var STATE_NAMES = ['scxml','state','parallel','initial','final'];
 
+var INITIAL_LINK_DISTANCE = 20,
+    LINK_DISTANCE_PADDING = 20,
+    BBOX_PADDING = 10;
+
+function generateStronglyConnectedLinks(nodes){
+    return nodes.map(function(node){
+        return nodes.map(function(node2){
+            return {
+                source : node,
+                target : node2
+            };
+        });
+    }).reduce(function(a,b){return a.concat(b);},[]);
+}
+
 function toGraph(graphContainerNode,scxmlNode,parentTick,size){
 
     console.log('toGraph',graphContainerNode,scxmlNode);
+
+    var bboxes = [], maxDimension = INITIAL_LINK_DISTANCE;
+
+    function updateMaxDimension(dim){
+        console.log('updating max dimension from', maxDimension, 'to',dim); 
+        maxDimension = dim;
+        force.linkDistance(maxDimension + LINK_DISTANCE_PADDING + BBOX_PADDING * 2);
+        force.start();
+    }
 
     var childScxmlNodes = d3.selectAll(scxmlNode.childNodes)[0].
                             filter(function(n){return n.nodeType === 1;}).
@@ -25,22 +49,44 @@ function toGraph(graphContainerNode,scxmlNode,parentTick,size){
 
         bboxRect[0].forEach(function(rect,i){
             var bbox = graphContents[0][i].getBBox();
-            rect.setAttribute('x',bbox.x);
-            rect.setAttribute('y',bbox.y);
-            rect.setAttribute('width',bbox.width);
-            rect.setAttribute('height',bbox.height);
+
+            var maxDim = Math.ceil(bbox.width > bbox.height ? bbox.width : bbox.height);
+            if(maxDim > maxDimension){
+                //if we're greater than the maxDim, then update the maxDim
+                updateMaxDimension(maxDim);
+                true;
+            }else if(maxDim < maxDimension){
+                var prevMaxDim = bboxes[i];
+                if(prevMaxDim === maxDimension){
+                    bboxes[i] = maxDim;     //update here, now, so we can just do Math.max.apply
+                    //otherwise, if he had the max dimension, so update the max dimension
+                    updateMaxDimension(Math.max.apply(null,bboxes));
+                }
+            }
+
+            //update bboxes[i]
+            bboxes[i] = maxDim;
+
+            //update the bboxRect
+            rect.setAttribute('x',bbox.x - BBOX_PADDING);
+            rect.setAttribute('y',bbox.y - BBOX_PADDING);
+            rect.setAttribute('width',bbox.width + BBOX_PADDING * 2);
+            rect.setAttribute('height',bbox.height + BBOX_PADDING * 2);
         });
 
         if(parentTick) parentTick();
     }
 
     if(childScxmlNodes.length){
+
+        var links = generateStronglyConnectedLinks(childScxmlNodes);
+
         var force = d3.layout.force()
             .charge(-120)
-            .linkDistance(30)
+            .linkDistance(INITIAL_LINK_DISTANCE)
             .nodes(childScxmlNodes)
             .size(size ? size : [1,1])
-            //.links(json.links)    //TODO
+            .links(links)
             .on("tick", tick)
             .start();
 
