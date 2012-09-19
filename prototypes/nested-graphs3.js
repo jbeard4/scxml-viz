@@ -91,7 +91,7 @@ function toGraph(graphContainerNode,scxmlNode,parentTick,size){
 
         graphContainers.call(force.drag);
 
-        var bboxRect = graphContainers.append('rect').attr('class','graphBBox').attr('width',20).attr('height',20);
+        var bboxRect = graphContainers.append('rect').attr('class','graphBBox').attr('width',20).attr('height',20).attr('rx',10).attr('ry',10);
         var graphContents = graphContainers.append('g').attr('class','graphContents');
 
         //recursive call to create children
