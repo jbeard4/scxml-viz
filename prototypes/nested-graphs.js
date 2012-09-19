@@ -80,7 +80,7 @@ function makeSubGraph(json,parent,parentTickCb){
     return g;
 }
 
-function makeParentGraph(graphs){
+function makeParentGraph(graphs,parent,parentTickListener,r){
 
     var INITIAL_LINK_DISTANCE = 20,
         LINK_DISTANCE_PADDING = 10,
@@ -91,7 +91,7 @@ function makeParentGraph(graphs){
         .linkDistance(INITIAL_LINK_DISTANCE)
         .size([width, height]);
 
-    var g = svg.append('g');
+    var g = parent.append('g');
 
     //used to cache bounding boxes to update force.linkDistance
     var bboxes = [], maxDimension = INITIAL_LINK_DISTANCE;
@@ -105,13 +105,8 @@ function makeParentGraph(graphs){
     }
 
     var graphNodes = graphs.map(function(graph,i){
-        var parentGNode = g.append('g').attr('class','parent');
-        var boundingRect = parentGNode.append('rect').attr('class','boundingRect');
 
-        bboxes.push(INITIAL_LINK_DISTANCE);
-
-        //we get back <g> containing module contents
-        var subGraphContent = makeSubGraph(graph,parentGNode,function(){
+        function parentTickListener(){
             //tick listener
             var bbox = subGraphContent.node().getBBox(); 
             //console.log('tick',rect); 
@@ -135,7 +130,22 @@ function makeParentGraph(graphs){
             boundingRect.attr("y",bbox.y - BBOX_PADDING); 
             boundingRect.attr("width",bbox.width + BBOX_PADDING * 2); 
             boundingRect.attr("height",bbox.height + BBOX_PADDING * 2); 
-        });
+        }
+
+
+        var parentGNode = g.append('g').attr('class','parent');
+        var boundingRect = parentGNode.append('rect').attr('class','boundingRect');
+
+        bboxes.push(INITIAL_LINK_DISTANCE);
+
+        //we get back <g> containing module contents
+        var subGraphContent = r ? 
+                                makeParentGraph(
+                                        d3.range(3).map(function(){return generateRandomGraph(5,3);}),
+                                        parentGNode,
+                                        parentTickListener,
+                                        r - 1) : 
+                                makeSubGraph(graph,parentGNode,parentTickListener);
 
         return parentGNode; 
     });
@@ -174,8 +184,11 @@ function makeParentGraph(graphs){
                 .attr("x2", function(d) { return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
         */
+
+        parentTickListener && parentTickListener();
     }
 
+    return g;
 }
 
 var width = 960,
@@ -189,26 +202,7 @@ var svg = d3.select("body").append("svg")
 
 //make two subgrpahs
 
-/*
-var json1 = generateRandomGraph(10,2);
-console.log(json1);
-var g1 = makeSubGraph(json1);
-
-var json2 = generateRandomGraph(10,2);
-console.log(json2);
-var g2 = makeSubGraph(json2);
-
-//make a parent graph, and place the two subgraphs inside
-var g3 = makeParentGraph({
-    nodes : [g1,g2],
-    links : [{
-        source : g1,
-        target : g2
-    }]
-});
-*/
-
 //create an array of graphs
 var graphs = d3.range(3).map(function(){return generateRandomGraph(5,3);});
 console.log('graphs',graphs);
-makeParentGraph(graphs);
+makeParentGraph(graphs,svg,null,1);
