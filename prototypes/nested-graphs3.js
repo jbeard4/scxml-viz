@@ -1,6 +1,6 @@
 var STATE_NAMES = ['scxml','state','parallel','initial','final'];
 
-function toGraph(graphContainerNode,scxmlNode,size){
+function toGraph(graphContainerNode,scxmlNode,parentTick,size){
 
     console.log('toGraph',graphContainerNode,scxmlNode);
 
@@ -30,6 +30,8 @@ function toGraph(graphContainerNode,scxmlNode,size){
             rect.setAttribute('width',bbox.width);
             rect.setAttribute('height',bbox.height);
         });
+
+        if(parentTick) parentTick();
     }
 
     if(childScxmlNodes.length){
@@ -49,7 +51,7 @@ function toGraph(graphContainerNode,scxmlNode,size){
 
         //recursive call to create children
         graphContainers.each(function(d,i){
-            toGraph(d3.select(graphContents[0][i]),d);
+            toGraph(d3.select(graphContents[0][i]),d,tick);
         });
 
     }else{
@@ -68,6 +70,6 @@ d3.xml('test.scxml','application/xml',function(doc){
         .attr("width", width)
         .attr("height", height);
 
-    toGraph(svg,doc.documentElement,[width,height]);
+    toGraph(svg,doc.documentElement,null,[width,height]);
 });
 
