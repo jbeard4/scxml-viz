@@ -3,17 +3,27 @@
 
     <state id="A">
         <state id="a1">
+            <state id="a11"/>
+            <state id="a12"/>
             <transition target="a2" event="t"/>
         </state>
 
-        <state id="a2"/>
+        <state id="a2">
+            <state id="a21"/>
+            <state id="a22"/>
+        </state>
     </state>
 
     <state id="B">
         <state id="b1">
+            <state id="b11"/>
+            <state id="b12"/>
             <transition target="b2" event="t"/>
         </state>
 
-        <state id="b2"/>
+        <state id="b2">
+            <state id="b21"/>
+            <state id="b22"/>
+        </state>
     </state>
 </scxml>
