@@ -46,8 +46,10 @@ var treemap = d3.layout.treemap()
     .children(getChildStates);
 
 var svg = d3.select("body").append("svg")
-    .attr("width", width)
-    .attr("height", height);
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("viewBox", "0 0 " + width + ' ' + height)
+    .attr("preserveAspectRatio", "xMidYMid meet");
 
 var g = svg.append("g");
 
@@ -175,8 +177,8 @@ function getInnerYCoordForBasicRectNode(d){
 }
 
 var path = 
-    'test.scxml';
-    //'test/parallel+interrupt/test5.scxml';
+    //'test.scxml';
+    'test/parallel+interrupt/test5.scxml';
 
 d3.xml(path,'application/xml',function(doc){
 
@@ -190,7 +192,8 @@ d3.xml(path,'application/xml',function(doc){
             .data(nodes)
         .enter().append("g")
             .attr("class", "cell")
-            .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+            .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+            .attr('id',function(d){return d.getAttribute('id');});
 
     cell.append("rect")
             .attr("rx", 10)
