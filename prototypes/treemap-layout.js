@@ -186,7 +186,7 @@ function getSourceAndDest(link,distanceThreshold){
     return minDistanceCombo;
 }
 
-function edgeLayout(d){
+function edgeLayout(reverseEdge,d){
     //4 possibilities:
         //source is basic, target is basic
         //source is composite, target is composite
@@ -206,7 +206,9 @@ function edgeLayout(d){
         dy = destY - sourceY,
         dr = Math.sqrt(dx * dx + dy * dy);
 
-    return "M" + sourceX + "," + sourceY + "A" + dr + "," + dr + " 0 0,0 " + destX + "," + destY;
+    return reverseEdge ? 
+        "M" + destX + "," + destY + "A" + dr + "," + dr + " 0 0,1 " + sourceX  + "," + sourceY : 
+        "M" + sourceX + "," + sourceY + "A" + dr + "," + dr + " 0 0,0 " + destX + "," + destY;
 }
 
 
@@ -296,8 +298,15 @@ d3.xml(path,'application/xml',function(doc){
             .enter().append('path')
                 .attr('class','transition')
                 .attr("marker-end", function(d) { return "url(#transitionMarker)"; })
-                .attr("d", edgeLayout)
+                .attr("d", edgeLayout.bind(null,false))
                 .attr("id",function(d,i){return 'transition' + i;});
+
+    var reverseEdgeDefinition = defs.selectAll('path.reverseTransition')
+                .data(links)
+            .enter().append('path')
+                .attr('class','reverseTransition')
+                .attr("d", edgeLayout.bind(null,true))
+                .attr("id",function(d,i){return 'reverseTransition' + i;});
 
     var edge = svg.selectAll('use.transition')
                 .data(links)
@@ -311,8 +320,22 @@ d3.xml(path,'application/xml',function(doc){
                 .attr('class','transitionLabel')
                 .attr('dy','1em')
                 .append('textPath')
-                .attr("xlink:href",function(d,i){return '#transition' + i;})
-                .attr("startOffset",10)
+                .attr("xlink:href",function(d,i){
+                    var points = getSourceAndDest(d,5);
+                    if(points[1][0] < points[0][0]){
+                        return '#reverseTransition' + i;
+                    }else{
+                        return '#transition' + i;
+                    }
+                })
+                .attr("startOffset",function(d){
+                    var points = getSourceAndDest(d,5);
+                    if(points[1][0] < points[0][0]){
+                        return 30;  //a bit extra because of marker
+                    }else{
+                        return 10;
+                    }
+                })
                 .text(function(d){
                     return (d.hasAttribute('event') ? d.getAttribute('event') : '') + 
                            (d.hasAttribute('cond') ? '[' + d.getAttribute('cond') + ']' : '');
