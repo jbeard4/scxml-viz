@@ -37,8 +37,10 @@ var width = 960,
 
 d3.ns.prefix.scxml = "http://www.w3.org/2005/07/scxml";
 
+var padding = 20;
+
 var treemap = d3.layout.treemap()
-    .padding(20)
+    .padding(padding)
     .size([width, height])
     .value(function(d) { return d.size; })
     .children(getChildStates);
@@ -195,8 +197,10 @@ d3.xml(path,'application/xml',function(doc){
             .attr("ry", 10)
             .attr("x", function(d) { return d.isParent ? 0 : getInnerXCoordForBasicRectNode(d);})
             .attr("y", function(d) { return d.isParent ? 0 : getInnerYCoordForBasicRectNode(d);})
-            .attr("width", function(d) { return d.isParent ? d.dx : basicWidth; })  //should be equal to bbox of the text
-            .attr("height", function(d) { return d.isParent ? d.dy : basicHeight; });
+            .attr("width", function(d) { return d.isParent ? d.dx - padding : basicWidth; })  //should be equal to bbox of the text
+            .attr("height", function(d) { return d.isParent ? d.dy - padding : basicHeight; });
+
+
 
     cell.append("text")
             .attr("x", function(d) { return d.isParent ? 10 : d.dx / 2; })
@@ -211,13 +215,13 @@ d3.xml(path,'application/xml',function(doc){
                 .attr('class','transition')
                 .attr("marker-end", function(d) { return "url(#transitionMarker)"; })
                 .attr("d", edgeLayout)
-                .attr("id",function(d,i){return i;});
+                .attr("id",function(d,i){return 'transition' + i;});
 
     var edge = svg.selectAll('use.transition')
                 .data(links)
             .enter().append('use')
                 .attr('class','transition')
-                .attr("xlink:href",function(d,i){return '#' + i;});
+                .attr("xlink:href",function(d,i){return '#transition' + i;});
 
     var transitionLabels = svg.selectAll('text.transitionLabel')
                 .data(links)
@@ -225,7 +229,7 @@ d3.xml(path,'application/xml',function(doc){
                 .attr('class','transitionLabel')
                 .attr('dy','1em')
                 .append('textPath')
-                .attr("xlink:href",function(d,i){return '#' + i;})
+                .attr("xlink:href",function(d,i){return '#transition' + i;})
                 .attr("startOffset",10)
                 .text(function(d){
                     return (d.hasAttribute('event') ? d.getAttribute('event') : '') + 
