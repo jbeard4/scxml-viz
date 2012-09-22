@@ -1,4 +1,5 @@
 var STATE_NAMES = ['scxml','state','parallel','initial','final','history'];
+var scxmlNs = "http://www.w3.org/2005/07/scxml";
 
 function getChildStates(state){
     return d3.selectAll(state.childNodes)[0].
@@ -30,6 +31,39 @@ function traverseAndCountSubElements(node){
     node.size = size;
     if(size > 1) node.isParent = true;
     return size;
+}
+
+function createInitialState(node,stateId){
+    var initialState = node.ownerDocument.createElementNS(scxmlNs,'initial');
+    var transition = node.ownerDocument.createElementNS(scxmlNs,'transition');
+    node.appendChild(initialState);
+    initialState.appendChild(transition);
+
+    transition.setAttribute('target',stateId);
+}
+
+function normalizeInitialStates(node){
+
+    if(node.hasAttribute('initial')){
+        //create a fake initial state
+        createInitialState(node,node.getAttribute('initial'));
+    }else{
+        var hasInitialState;
+        for(var i=0; i < node.childNodes; i++){
+            if(node.childNodes[i].localName === 'initial'){
+                hasInitialState = true;
+                break;
+            }
+        }
+
+        if(!hasInitialState){
+            //get the first state
+            var states = getChildStates(node);
+            if(states.length) createInitialState(node,states[0].getAttribute('id'));
+        }
+    }
+
+    getChildStates(node).forEach(normalizeInitialStates);   //recurse
 }
 
 var width = 960,
@@ -72,7 +106,9 @@ defs.selectAll("marker")
 
 //TODO: make dynamic based on bbox of the text? or just guess dimensions? maybe ask on the list about this
 var basicWidth = 30,
-    basicHeight = 20;
+    basicHeight = 20,
+    initialStateWidth = 10,
+    initialStateHeight = 10;
 
 function getDistance(p1,p2){
     return Math.sqrt(Math.pow(p2[0] - p1[0],2) + Math.pow(p2[1] - p1[1], 2));
@@ -99,9 +135,13 @@ function getCenterPoints(d){
             [d.x + d.dx, d.y + dy/2],     
             [d.x + d.dx, d.y + dy + dy/2]    
         ]; 
+    }else if(d.localName === 'initial'){
+        var x = getInnerXCoordForBasicRectNode(d) + d.x + initialStateWidth/2,
+            y = getInnerYCoordForBasicRectNode(d) + d.y + initialStateHeight/2;
+        return [[x,y]];
     }else{
-        var x = getInnerXCoordForBasicRectNode(d) + d.x,
-            y = getInnerYCoordForBasicRectNode(d) + d.y;
+        x = getInnerXCoordForBasicRectNode(d) + d.x;
+        y = getInnerYCoordForBasicRectNode(d) + d.y;
 
         dx = basicWidth/2;
         dy = basicHeight/2;
@@ -184,6 +224,8 @@ var path =
 
 d3.xml(path,'application/xml',function(doc){
 
+    normalizeInitialStates(doc.documentElement);
+    console.log((new XMLSerializer()).serializeToString(doc));
     traverseAndCountSubElements(doc.documentElement);
 
     var nodes = treemap.nodes(doc.documentElement);
@@ -196,6 +238,8 @@ d3.xml(path,'application/xml',function(doc){
             .attr("class", function(node){
                 if(node.localName === 'history'){
                     return "cell history";
+                }else if(node.localName === 'initial'){
+                    return "cell initial";
                 }else if(node.parentNode && node.parentNode.localName === 'parallel'){
                     return "cell orthogonalComponent";
                 }else{
@@ -213,6 +257,8 @@ d3.xml(path,'application/xml',function(doc){
             .attr("width", function(d) { 
                 if(d.isParent){ 
                     return d.dx - padding;
+                }else if(d.localName === 'initial'){
+                    return initialStateWidth;
                 }else if(d.localName === 'history'){
                     return basicWidth;
                 }else {
@@ -222,6 +268,8 @@ d3.xml(path,'application/xml',function(doc){
             .attr("height", function(d) { 
                 if(d.isParent){ 
                     return d.dy - padding;
+                }else if(d.localName === 'initial'){
+                    return initialStateHeight;
                 }else if(d.localName === 'history'){
                     return basicWidth;  //should be a circle
                 }else {
@@ -234,7 +282,15 @@ d3.xml(path,'application/xml',function(doc){
             .attr("y", function(d) { return d.isParent ? 10 : d.dy / 2; })
             .attr("dy", function(d){ return d.localName ==='history' ? 10 : ".35em";})
             .attr("text-anchor", "middle")
-            .text(function(d) { return d.localName === 'history' ? (d.getAttribute('type') === 'deep' ? 'H*' : 'H') : d.getAttribute('id'); });
+            .text(function(d) { 
+                if(d.localName === 'history'){
+                    return (d.getAttribute('type') === 'deep' ? 'H*' : 'H'); 
+                }else if(d.localName === 'initial'){
+                    return '';
+                }else{
+                    return d.getAttribute('id'); 
+                }
+            });
 
     var edgeDefinition = defs.selectAll('path.transition')
                 .data(links)
