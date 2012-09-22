@@ -3,27 +3,43 @@
 
     <state id="A">
         <state id="a1">
-            <state id="a11"/>
-            <state id="a12"/>
+            <state id="a11">
+                <transition target="a12" event="t" cond="true"/>
+            </state>
+            <state id="a12">
+                <transition target="a11" event="t" cond="true"/>
+            </state>
             <transition target="a2" event="t"/>
         </state>
 
         <state id="a2">
-            <state id="a21"/>
-            <state id="a22"/>
+            <state id="a21">
+                <transition target="a22" event="t" cond="true"/>
+            </state>
+            <state id="a22">
+                <transition target="a21" event="t" cond="true"/>
+            </state>
         </state>
     </state>
 
     <state id="B">
         <state id="b1">
-            <state id="b11"/>
-            <state id="b12"/>
+            <state id="b11">
+                <transition target="b12" event="t" cond="true"/>
+            </state>
+            <state id="b12">
+                <transition target="b11" event="t" cond="true"/>
+            </state>
             <transition target="b2" event="t"/>
         </state>
 
         <state id="b2">
-            <state id="b21"/>
-            <state id="b22"/>
+            <state id="b21">
+                <transition target="b22" event="t" cond="true"/>
+            </state>
+            <state id="b22">
+                <transition target="b21" event="t" cond="true"/>
+            </state>
         </state>
     </state>
 </scxml>

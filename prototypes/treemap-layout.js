@@ -1,3 +1,11 @@
+//other possibilities:
+    //do not render basic states for treemap. instead, maybe make a fake state to contain basic states, and render using force layout. pretty advanced, but I think doable
+    //render orthogonal components in the right way: with dashes separating components
+    //then: transition labels
+    //history states
+    //transitions with multiple targets
+    //add title with info on entry/exit actions.
+
 var STATE_NAMES = ['scxml','state','parallel','initial','final'];
 
 function getChildStates(state){
@@ -21,6 +29,7 @@ function traverseAndCountSubElements(node){
     var size = sizes.reduce(function(a,b){return a + b;},0) + 1;
     console.log('size',size);
     node.size = size;
+    if(size > 1) node.isParent = true;
     return size;
 }
 
@@ -39,12 +48,129 @@ var treemap = d3.layout.treemap()
 var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height)
-  .append("g")
-    .attr("transform", "translate(-.5,-.5)");
+  .append("g");
+
+svg.append("svg:defs").selectAll("marker")
+    .data(["suit", "licensing", "resolved"])
+  .enter().append("svg:marker")
+    .attr("id", 'transitionMarker')
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", -1.5)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+  .append("svg:path")
+    .attr("d", "M0,-5L10,0L0,5");
+
+
+//TODO: make dynamic based on bbox of the text? or just guess dimensions? maybe ask on the list about this
+var basicWidth = 30,
+    basicHeight = 20;
+
+function getDistance(p1,p2){
+    return Math.sqrt(Math.pow(p2[0] - p1[0],2) + Math.pow(p2[1] - p1[1], 2));
+}
+
+function getCenterPoints(d){
+    if(d.isParent){
+        //debugger;
+
+        var dx = d.dx/2,
+            dy = d.dy/2;
+
+        return [
+            [d.x + dx, d.y],     //top-center
+            [d.x + dx, d.y + d.dy],    //bottom-center
+            [d.x, d.y + dy],     //left-center
+            [d.x + d.dx, d.y + dy]     //right-center
+        ]; 
+    }else{
+        var x = getInnerXCoordForBasicRectNode(d) + d.x,
+            y = getInnerYCoordForBasicRectNode(d) + d.y;
+
+        dx = basicWidth/2;
+        dy = basicHeight/2;
+
+        return [
+            [x + dx,y],
+            [x + dx,y + basicHeight],
+            [x,y + dy],
+            [x + basicWidth,y + dy]
+        ]; 
+    }
+}
+
+function getSourceAndDest(link,distanceThreshold){
+
+    distanceThreshold = distanceThreshold || 0;
+
+    var sourceCenterPoints = getCenterPoints(link.source),
+        targetCenterPoints = getCenterPoints(link.target);
+
+    console.log(link,sourceCenterPoints,targetCenterPoints);  
+
+    //cartesion product
+    var centerPointCombinations = [];
+    for(var i = 0; i < sourceCenterPoints.length; i++){
+        for(var j = 0; j < targetCenterPoints.length; j++){
+            centerPointCombinations.push([sourceCenterPoints[i],targetCenterPoints[j]]);
+        } 
+    } 
+
+    var minDistance = Number.MAX_VALUE, minDistanceCombo;
+    for(var k = 0; k < centerPointCombinations.length; k++){
+        var points = centerPointCombinations[k];
+        var distance = getDistance.apply(null,points);
+        if(distance < minDistance && distance > distanceThreshold){
+            minDistance = distance;
+            minDistanceCombo = points; 
+        }
+    }
+
+    return minDistanceCombo;
+}
+
+function edgeLayout(d){
+    //4 possibilities:
+        //source is basic, target is basic
+        //source is composite, target is composite
+        //source is basic, target is composite
+        //source is composite, target is basic
+    //either way, pick the closest edge, and aim for the center.
+    //left-of, right of, above, below, contains. pick the center point on the closest edge.
+    //ah, edge routing... we also want to minimize edge crossings, so...
+    //TODO: deal with the special case of looping back to ourself
+
+    var points = getSourceAndDest(d,5);
+    var sourceX = points[0][0], 
+        sourceY = points[0][1], 
+        destX = points[1][0], 
+        destY = points[1][1],   
+        dx = destX - sourceX,
+        dy = destY - sourceY,
+        dr = Math.sqrt(dx * dx + dy * dy);
+
+    return "M" + sourceX + "," + sourceY + "A" + dr + "," + dr + " 0 0,0 " + destX + "," + destY;
+    /*
+    var dx = d.target.x - d.source.x,
+        dy = d.target.y - d.source.y,
+        dr = Math.sqrt(dx * dx + dy * dy);
+    return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
+    */
+}
+
+function getInnerXCoordForBasicRectNode(d){
+    return d.dx / 2 - basicWidth/2;
+}
+
+function getInnerYCoordForBasicRectNode(d){
+    return d.dy / 2 - basicHeight/2;
+}
 
 var path = 
-    //'test.scxml';
-    'test/parallel+interrupt/test5.scxml';
+    'test.scxml';
+    //'test/parallel+interrupt/test5.scxml';
 
 d3.xml(path,'application/xml',function(doc){
 
@@ -61,14 +187,25 @@ d3.xml(path,'application/xml',function(doc){
             .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
     cell.append("rect")
-            .attr("width", function(d) { return d.dx; })
-            .attr("height", function(d) { return d.dy; })
-            .style("fill", function(d) { return getChildStates(d).length ? color(d.getAttribute('id')) : null; });
+            .attr("rx", 10)
+            .attr("ry", 10)
+            .attr("x", function(d) { return d.isParent ? 0 : getInnerXCoordForBasicRectNode(d);})
+            .attr("y", function(d) { return d.isParent ? 0 : getInnerYCoordForBasicRectNode(d);})
+            .attr("width", function(d) { return d.isParent ? d.dx : basicWidth; })  //should be equal to bbox of the text
+            .attr("height", function(d) { return d.isParent ? d.dy : basicHeight; });
 
     cell.append("text")
-            .attr("x", function(d) { return d.dx / 2; })
-            .attr("y", function(d) { return d.dy / 2; })
+            .attr("x", function(d) { return d.isParent ? 10 : d.dx / 2; })
+            .attr("y", function(d) { return d.isParent ? 10 : d.dy / 2; })
             .attr("dy", ".35em")
             .attr("text-anchor", "middle")
-            .text(function(d) { return getChildStates(d).length ? null : d.getAttribute('id'); });
+            .text(function(d) { return d.getAttribute('id'); });
+
+    var edge = svg.selectAll('path.transition')
+                .data(links)
+            .enter().append('path')
+                .attr('class','transition')
+                .attr("marker-end", function(d) { return "url(#transitionMarker)"; })
+                .attr("d", edgeLayout);
+
 });

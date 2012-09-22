@@ -104,7 +104,7 @@ function toGraph(graphContainerNode,scxmlNode,parentTick,size){
     if(childScxmlNodes.length){
 
         var force = d3.layout.force()
-            .charge(-120)
+            .charge(-8000)
             .linkDistance(INITIAL_LINK_DISTANCE)
             .nodes(childScxmlNodes)
             .size(size ? size : [1,1])
@@ -131,8 +131,8 @@ function toGraph(graphContainerNode,scxmlNode,parentTick,size){
 d3.xml('test.scxml','application/xml',function(doc){
     console.log('doc',doc);
 
-    var width = 1000,
-        height = 1000;
+    var width = 5000,
+        height = 5000;
 
     var svg = d3.select("body").append("svg")
         .attr("width", width)
