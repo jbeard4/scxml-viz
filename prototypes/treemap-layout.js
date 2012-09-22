@@ -1,4 +1,4 @@
-var STATE_NAMES = ['scxml','state','parallel','initial','final','history'];
+var STATE_NAMES = ['scxml','state','parallel','final','history'];
 var scxmlNs = "http://www.w3.org/2005/07/scxml";
 
 function getChildStates(state){
@@ -33,37 +33,38 @@ function traverseAndCountSubElements(node){
     return size;
 }
 
-function createInitialState(node,stateId){
-    var initialState = node.ownerDocument.createElementNS(scxmlNs,'initial');
-    var transition = node.ownerDocument.createElementNS(scxmlNs,'transition');
-    node.appendChild(initialState);
-    initialState.appendChild(transition);
-
-    transition.setAttribute('target',stateId);
-}
-
 function normalizeInitialStates(node){
 
-    if(node.hasAttribute('initial')){
-        //create a fake initial state
-        createInitialState(node,node.getAttribute('initial'));
-    }else{
-        var hasInitialState;
-        for(var i=0; i < node.childNodes; i++){
-            if(node.childNodes[i].localName === 'initial'){
-                hasInitialState = true;
-                break;
+    if(node.isParent){
+        if(node.localName !== 'parallel'){
+            if(node.hasAttribute('initial')){
+                node.ownerDocument.getElementById(node.getAttribute('initial')).isInitial = true;
+            }else{
+                var initialState;
+                done:
+                for(var i=0; i < node.childNodes; i++){
+                    var state = node.childNodes[i];
+                    if(state.localName === 'initial'){
+                        for(var j=0; j < state.childNodes; j++){
+                            var node2 = state[j];
+                            if(node2.localName === 'transition'){
+                                initialState = node.ownerDocument.getElementById(node2.getAttribute('target'));
+                                break done;
+                            }
+                        }
+                    }
+                }
+
+                if(!initialState){
+                    //get the first state
+                    initialState = getChildStates(node)[0];
+                }
+                initialState.isInitial = true; 
             }
         }
 
-        if(!hasInitialState){
-            //get the first state
-            var states = getChildStates(node);
-            if(states.length) createInitialState(node,states[0].getAttribute('id'));
-        }
+        getChildStates(node).forEach(normalizeInitialStates);   //recurse
     }
-
-    getChildStates(node).forEach(normalizeInitialStates);   //recurse
 }
 
 var width = 960,
@@ -224,9 +225,8 @@ var path =
 
 d3.xml(path,'application/xml',function(doc){
 
-    normalizeInitialStates(doc.documentElement);
-    console.log((new XMLSerializer()).serializeToString(doc));
     traverseAndCountSubElements(doc.documentElement);
+    normalizeInitialStates(doc.documentElement);
 
     var nodes = treemap.nodes(doc.documentElement);
     var links = getTransitionsFromStates(nodes);
@@ -236,15 +236,20 @@ d3.xml(path,'application/xml',function(doc){
             .data(nodes)
         .enter().append("g")
             .attr("class", function(node){
+                var c;
                 if(node.localName === 'history'){
-                    return "cell history";
+                    c = "cell history";
                 }else if(node.localName === 'initial'){
-                    return "cell initial";
+                    c = "cell initial";
                 }else if(node.parentNode && node.parentNode.localName === 'parallel'){
-                    return "cell orthogonalComponent";
+                    c = "cell orthogonalComponent";
                 }else{
-                    return "cell";
+                    c = "cell";
                 }
+
+                if(node.isInitial) c += ' initial';
+
+                return c;
             })
             .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
             .attr('id',function(d){return d.getAttribute('id');});
@@ -257,8 +262,6 @@ d3.xml(path,'application/xml',function(doc){
             .attr("width", function(d) { 
                 if(d.isParent){ 
                     return d.dx - padding;
-                }else if(d.localName === 'initial'){
-                    return initialStateWidth;
                 }else if(d.localName === 'history'){
                     return basicWidth;
                 }else {
@@ -268,8 +271,6 @@ d3.xml(path,'application/xml',function(doc){
             .attr("height", function(d) { 
                 if(d.isParent){ 
                     return d.dy - padding;
-                }else if(d.localName === 'initial'){
-                    return initialStateHeight;
                 }else if(d.localName === 'history'){
                     return basicWidth;  //should be a circle
                 }else {
@@ -285,8 +286,6 @@ d3.xml(path,'application/xml',function(doc){
             .text(function(d) { 
                 if(d.localName === 'history'){
                     return (d.getAttribute('type') === 'deep' ? 'H*' : 'H'); 
-                }else if(d.localName === 'initial'){
-                    return '';
                 }else{
                     return d.getAttribute('id'); 
                 }
