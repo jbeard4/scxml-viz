@@ -1,11 +1,3 @@
-//other possibilities:
-    //do not render basic states for treemap. instead, maybe make a fake state to contain basic states, and render using force layout. pretty advanced, but I think doable
-    //render orthogonal components in the right way: with dashes separating components
-    //then: transition labels
-    //history states
-    //transitions with multiple targets
-    //add title with info on entry/exit actions.
-
 var STATE_NAMES = ['scxml','state','parallel','initial','final'];
 
 function getChildStates(state){
@@ -81,9 +73,17 @@ function getCenterPoints(d){
 
         return [
             [d.x + dx, d.y],     //top-center
+            [d.x + dx/2, d.y],
+            [d.x + dx + dx/2, d.y],
             [d.x + dx, d.y + d.dy],    //bottom-center
+            [d.x + dx/2, d.y + d.dy],    
+            [d.x + dx + dx/2, d.y + d.dy],   
             [d.x, d.y + dy],     //left-center
-            [d.x + d.dx, d.y + dy]     //right-center
+            [d.x, d.y + dy/2],    
+            [d.x, d.y + dy + dy/2],     
+            [d.x + d.dx, d.y + dy],     //right-center
+            [d.x + d.dx, d.y + dy/2],     
+            [d.x + d.dx, d.y + dy + dy/2]    
         ]; 
     }else{
         var x = getInnerXCoordForBasicRectNode(d) + d.x,
@@ -169,8 +169,8 @@ function getInnerYCoordForBasicRectNode(d){
 }
 
 var path = 
-    'test.scxml';
-    //'test/parallel+interrupt/test5.scxml';
+    //'test.scxml';
+    'test/parallel+interrupt/test5.scxml';
 
 d3.xml(path,'application/xml',function(doc){
 
