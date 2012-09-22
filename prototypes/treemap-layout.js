@@ -45,10 +45,13 @@ var treemap = d3.layout.treemap()
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
-    .attr("height", height)
-  .append("g");
+    .attr("height", height);
 
-svg.append("svg:defs").selectAll("marker")
+var g = svg.append("g");
+
+var defs = svg.append("svg:defs");
+
+defs.selectAll("marker")
     .data(["suit", "licensing", "resolved"])
   .enter().append("svg:marker")
     .attr("id", 'transitionMarker')
@@ -170,8 +173,8 @@ function getInnerYCoordForBasicRectNode(d){
 }
 
 var path = 
-    //'test.scxml';
-    'test/parallel+interrupt/test5.scxml';
+    'test.scxml';
+    //'test/parallel+interrupt/test5.scxml';
 
 d3.xml(path,'application/xml',function(doc){
 
@@ -202,30 +205,31 @@ d3.xml(path,'application/xml',function(doc){
             .attr("text-anchor", "middle")
             .text(function(d) { return d.getAttribute('id'); });
 
-    var edge = svg.selectAll('path.transition')
+    var edgeDefinition = defs.selectAll('path.transition')
                 .data(links)
             .enter().append('path')
                 .attr('class','transition')
                 .attr("marker-end", function(d) { return "url(#transitionMarker)"; })
-                .attr("d", edgeLayout);
+                .attr("d", edgeLayout)
+                .attr("id",function(d,i){return i;});
 
-    //TODO: get all the transiitons
+    var edge = svg.selectAll('use.transition')
+                .data(links)
+            .enter().append('use')
+                .attr('class','transition')
+                .attr("xlink:href",function(d,i){return '#' + i;});
+
     var transitionLabels = svg.selectAll('text.transitionLabel')
                 .data(links)
             .enter().append('text')
                 .attr('class','transitionLabel')
-                .attr("text-anchor", "middle")
-                .attr('x',function(d){
-                    var points = getSourceAndDest(d,5);
-                    return points[0][0] + (points[1][0] - points[0][0])/2;
-                })
-                .attr('y',function(d){
-                    var points = getSourceAndDest(d,5);
-                    return points[0][1] + (points[1][1] - points[0][1])/2;
-                })
+                .attr('dy','1em')
+                .append('textPath')
+                .attr("xlink:href",function(d,i){return '#' + i;})
+                .attr("startOffset",10)
                 .text(function(d){
                     return (d.hasAttribute('event') ? d.getAttribute('event') : '') + 
-                           (d.hasAttribute('cond') ? d.getAttribute('cond') : '');
+                           (d.hasAttribute('cond') ? '[' + d.getAttribute('cond') + ']' : '');
                 });
 
 });
