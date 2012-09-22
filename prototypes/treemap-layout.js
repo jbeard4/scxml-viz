@@ -6,13 +6,19 @@ function getChildStates(state){
         filter(function(n){return STATE_NAMES.indexOf(n.localName) > -1;});
 }
 
-function getLinksFromStates(childScxmlNodes){
-    return childScxmlNodes.
+function getTransitionsFromStates(childScxmlNodes){
+    var transitions = childScxmlNodes.
         map(function(node){return node.childNodes;}).
         map(function(domNodeList){return Array.prototype.slice.call(domNodeList);}).
         reduce(function(a,b){return a.concat(b);},[]).
-        filter(function(node){return node.localName === 'transition';}).
-        map(function(transitionNode){return {source : transitionNode.parentNode, target : transitionNode.ownerDocument.getElementById(transitionNode.getAttribute('target'))};});
+        filter(function(node){return node.localName === 'transition';});
+
+    transitions.forEach(function(transitionNode){
+        transitionNode.source = transitionNode.parentNode;
+        transitionNode.target = transitionNode.ownerDocument.getElementById(transitionNode.getAttribute('target'));
+    });
+
+    return transitions;
 }
 
 function traverseAndCountSubElements(node){
@@ -152,13 +158,8 @@ function edgeLayout(d){
         dr = Math.sqrt(dx * dx + dy * dy);
 
     return "M" + sourceX + "," + sourceY + "A" + dr + "," + dr + " 0 0,0 " + destX + "," + destY;
-    /*
-    var dx = d.target.x - d.source.x,
-        dy = d.target.y - d.source.y,
-        dr = Math.sqrt(dx * dx + dy * dy);
-    return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
-    */
 }
+
 
 function getInnerXCoordForBasicRectNode(d){
     return d.dx / 2 - basicWidth/2;
@@ -177,7 +178,7 @@ d3.xml(path,'application/xml',function(doc){
     traverseAndCountSubElements(doc.documentElement);
 
     var nodes = treemap.nodes(doc.documentElement);
-    var links = getLinksFromStates(nodes);
+    var links = getTransitionsFromStates(nodes);
     treemap.links(links);
 
     var cell = svg.selectAll("g")
@@ -207,5 +208,24 @@ d3.xml(path,'application/xml',function(doc){
                 .attr('class','transition')
                 .attr("marker-end", function(d) { return "url(#transitionMarker)"; })
                 .attr("d", edgeLayout);
+
+    //TODO: get all the transiitons
+    var transitionLabels = svg.selectAll('text.transitionLabel')
+                .data(links)
+            .enter().append('text')
+                .attr('class','transitionLabel')
+                .attr("text-anchor", "middle")
+                .attr('x',function(d){
+                    var points = getSourceAndDest(d,5);
+                    return points[0][0] + (points[1][0] - points[0][0])/2;
+                })
+                .attr('y',function(d){
+                    var points = getSourceAndDest(d,5);
+                    return points[0][1] + (points[1][1] - points[0][1])/2;
+                })
+                .text(function(d){
+                    return (d.hasAttribute('event') ? d.getAttribute('event') : '') + 
+                           (d.hasAttribute('cond') ? d.getAttribute('cond') : '');
+                });
 
 });
