@@ -1,4 +1,4 @@
-var STATE_NAMES = ['scxml','state','parallel','initial','final'];
+var STATE_NAMES = ['scxml','state','parallel','initial','final','history'];
 
 function getChildStates(state){
     return d3.selectAll(state.childNodes)[0].
@@ -11,7 +11,8 @@ function getTransitionsFromStates(childScxmlNodes){
         map(function(node){return node.childNodes;}).
         map(function(domNodeList){return Array.prototype.slice.call(domNodeList);}).
         reduce(function(a,b){return a.concat(b);},[]).
-        filter(function(node){return node.localName === 'transition';});
+        filter(function(node){return node.localName === 'transition';}).
+        filter(function(transitionNode){return transitionNode.hasAttribute('target');});    //TODO: find a way to render targetless transitions
 
     transitions.forEach(function(transitionNode){
         transitionNode.source = transitionNode.parentNode;
@@ -178,7 +179,8 @@ function getInnerYCoordForBasicRectNode(d){
 
 var path = 
     //'test.scxml';
-    'test/parallel+interrupt/test5.scxml';
+    //'test/parallel+interrupt/test5.scxml';
+    'test/history/history5.scxml';
 
 d3.xml(path,'application/xml',function(doc){
 
@@ -191,24 +193,48 @@ d3.xml(path,'application/xml',function(doc){
     var cell = svg.selectAll("g")
             .data(nodes)
         .enter().append("g")
-            .attr("class", function(node){return node.parentNode && node.parentNode.localName === 'parallel' ? "cell orthogonalComponent" : "cell";})
+            .attr("class", function(node){
+                if(node.localName === 'history'){
+                    return "cell history";
+                }else if(node.parentNode && node.parentNode.localName === 'parallel'){
+                    return "cell orthogonalComponent";
+                }else{
+                    return "cell";
+                }
+            })
             .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
             .attr('id',function(d){return d.getAttribute('id');});
 
     cell.append("rect")
-            .attr("rx", 10)
-            .attr("ry", 10)
+            .attr("rx", function(d){ return d.localName === 'history' ? d.dx : 10;})
+            .attr("ry", function(d){ return d.localName === 'history' ? d.dy : 10;})
             .attr("x", function(d) { return d.isParent ? 0 : getInnerXCoordForBasicRectNode(d);})
             .attr("y", function(d) { return d.isParent ? 0 : getInnerYCoordForBasicRectNode(d);})
-            .attr("width", function(d) { return d.isParent ? d.dx - padding : basicWidth; })  //should be equal to bbox of the text
-            .attr("height", function(d) { return d.isParent ? d.dy - padding : basicHeight; });
+            .attr("width", function(d) { 
+                if(d.isParent){ 
+                    return d.dx - padding;
+                }else if(d.localName === 'history'){
+                    return basicWidth;
+                }else {
+                    return basicWidth; 
+                }
+            })  //should be equal to bbox of the text
+            .attr("height", function(d) { 
+                if(d.isParent){ 
+                    return d.dy - padding;
+                }else if(d.localName === 'history'){
+                    return basicWidth;  //should be a circle
+                }else {
+                    return basicHeight; 
+                }
+            });
 
     cell.append("text")
             .attr("x", function(d) { return d.isParent ? 10 : d.dx / 2; })
             .attr("y", function(d) { return d.isParent ? 10 : d.dy / 2; })
-            .attr("dy", ".35em")
+            .attr("dy", function(d){ return d.localName ==='history' ? 10 : ".35em";})
             .attr("text-anchor", "middle")
-            .text(function(d) { return d.getAttribute('id'); });
+            .text(function(d) { return d.localName === 'history' ? (d.getAttribute('type') === 'deep' ? 'H*' : 'H') : d.getAttribute('id'); });
 
     var edgeDefinition = defs.selectAll('path.transition')
                 .data(links)
