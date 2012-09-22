@@ -191,7 +191,7 @@ d3.xml(path,'application/xml',function(doc){
     var cell = svg.selectAll("g")
             .data(nodes)
         .enter().append("g")
-            .attr("class", "cell")
+            .attr("class", function(node){return node.parentNode && node.parentNode.localName === 'parallel' ? "cell orthogonalComponent" : "cell";})
             .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
             .attr('id',function(d){return d.getAttribute('id');});
 
@@ -202,8 +202,6 @@ d3.xml(path,'application/xml',function(doc){
             .attr("y", function(d) { return d.isParent ? 0 : getInnerYCoordForBasicRectNode(d);})
             .attr("width", function(d) { return d.isParent ? d.dx - padding : basicWidth; })  //should be equal to bbox of the text
             .attr("height", function(d) { return d.isParent ? d.dy - padding : basicHeight; });
-
-
 
     cell.append("text")
             .attr("x", function(d) { return d.isParent ? 10 : d.dx / 2; })
