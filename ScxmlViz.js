@@ -1,4 +1,4 @@
-function ScxmlViz(domAttachPoint,doc){
+function ScxmlViz(domAttachPoint,doc,width,height){
     var STATE_NAMES = ['scxml','state','parallel','final','history'];
     var scxmlNs = "http://www.w3.org/2005/07/scxml";
 
@@ -68,9 +68,8 @@ function ScxmlViz(domAttachPoint,doc){
         }
     }
 
-    var width = 960,
-        height = 500,
-        color = d3.scale.category20c();
+    width = width || 960;
+    height = height || 500;
 
     d3.ns.prefix.scxml = "http://www.w3.org/2005/07/scxml";
 
@@ -84,7 +83,7 @@ function ScxmlViz(domAttachPoint,doc){
 
     var svg = d3.select(domAttachPoint).append("svg")
         .attr("width", "100%")
-        .attr("height", "100%")
+        .attr("height", "98%")
         .attr("viewBox", "0 0 " + width + ' ' + height)
         .attr("preserveAspectRatio", "xMidYMid meet");
 
