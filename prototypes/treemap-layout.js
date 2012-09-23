@@ -106,8 +106,9 @@ defs.selectAll("marker")
 
 
 //TODO: make dynamic based on bbox of the text? or just guess dimensions? maybe ask on the list about this
-var basicWidth = 30,
-    basicHeight = 20,
+var historyDim = 30,
+    basicWidth = 10,
+    basicHeight = 10,
     initialStateWidth = 10,
     initialStateHeight = 10;
 
@@ -136,9 +137,9 @@ function getCenterPoints(d){
             [d.x + d.dx, d.y + dy/2],     
             [d.x + d.dx, d.y + dy + dy/2]    
         ]; 
-    }else if(d.localName === 'initial'){
-        var x = getInnerXCoordForBasicRectNode(d) + d.x + initialStateWidth/2,
-            y = getInnerYCoordForBasicRectNode(d) + d.y + initialStateHeight/2;
+    }else if(d.localName === 'history'){
+        var x = getInnerXCoordForBasicRectNode(d) + d.x,
+            y = getInnerYCoordForBasicRectNode(d) + d.y + historyDim/2;
         return [[x,y]];
     }else{
         x = getInnerXCoordForBasicRectNode(d) + d.x;
@@ -223,7 +224,9 @@ function getInnerYCoordForBasicRectNode(d){
 var path = 
     //'test.scxml';
     //'test/parallel+interrupt/test5.scxml';
-    'test/history/history5.scxml';
+    'canvas.xml';
+    //'editor-behaviour.xml';
+    //'test/history/history5.scxml';
 
 d3.xml(path,'application/xml',function(doc){
 
@@ -256,6 +259,14 @@ d3.xml(path,'application/xml',function(doc){
             .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
             .attr('id',function(d){return d.getAttribute('id');});
 
+    var xmlSerializer = new XMLSerializer();
+    cell.append('title').text(function(d){
+        //debugger;
+        return d3.selectAll(d.childNodes)[0]
+                .filter(function(d){return d.localName === 'onentry' || d.localName === 'onexit';})
+                .map(function(onentry){return xmlSerializer.serializeToString(onentry);}).join('\n');
+    });
+
     cell.append("rect")
             .attr("rx", function(d){ return d.localName === 'history' ? d.dx : 10;})
             .attr("ry", function(d){ return d.localName === 'history' ? d.dy : 10;})
@@ -265,7 +276,7 @@ d3.xml(path,'application/xml',function(doc){
                 if(d.isParent){ 
                     return d.dx - padding;
                 }else if(d.localName === 'history'){
-                    return basicWidth;
+                    return historyDim;
                 }else {
                     return basicWidth; 
                 }
@@ -274,7 +285,7 @@ d3.xml(path,'application/xml',function(doc){
                 if(d.isParent){ 
                     return d.dy - padding;
                 }else if(d.localName === 'history'){
-                    return basicWidth;  //should be a circle
+                    return historyDim;  //should be a circle
                 }else {
                     return basicHeight; 
                 }
@@ -283,8 +294,24 @@ d3.xml(path,'application/xml',function(doc){
     cell.append("text")
             .attr("x", function(d) { return d.isParent ? 10 : d.dx / 2; })
             .attr("y", function(d) { return d.isParent ? 10 : d.dy / 2; })
-            .attr("dy", function(d){ return d.localName ==='history' ? 10 : ".35em";})
-            .attr("text-anchor", "middle")
+            .attr("dy", function(d){ 
+                if(d.localName ==='history'){ 
+                    return historyDim / 2; 
+                }else if(d.isParent){
+                    return ".35em";
+                }else{
+                    return basicHeight + 4;
+                }
+            })
+            .attr('dx',function(d){
+                if(d.localName ==='history'){ 
+                    //return historyDim / 2; 
+                    return 10;
+                }else{
+                    return 0;
+                }
+            })
+            .attr("text-anchor", function(d){ return d.isParent ? "" : "middle";})
             .text(function(d) { 
                 if(d.localName === 'history'){
                     return (d.getAttribute('type') === 'deep' ? 'H*' : 'H'); 
@@ -301,6 +328,8 @@ d3.xml(path,'application/xml',function(doc){
                 .attr("d", edgeLayout.bind(null,false))
                 .attr("id",function(d,i){return 'transition' + i;});
 
+
+
     var reverseEdgeDefinition = defs.selectAll('path.reverseTransition')
                 .data(links)
             .enter().append('path')
@@ -308,15 +337,16 @@ d3.xml(path,'application/xml',function(doc){
                 .attr("d", edgeLayout.bind(null,true))
                 .attr("id",function(d,i){return 'reverseTransition' + i;});
 
-    var edge = svg.selectAll('use.transition')
+    var edgeGroup = svg.selectAll('g.transition')
                 .data(links)
-            .enter().append('use')
+            .enter().append('g')
+                .attr('class','transition');
+
+    var edge = edgeGroup.append('use')
                 .attr('class','transition')
                 .attr("xlink:href",function(d,i){return '#transition' + i;});
 
-    var transitionLabels = svg.selectAll('text.transitionLabel')
-                .data(links)
-            .enter().append('text')
+    var transitionLabels = edgeGroup.append('text')
                 .attr('class','transitionLabel')
                 .attr('dy','1em')
                 .append('textPath')
@@ -340,5 +370,7 @@ d3.xml(path,'application/xml',function(doc){
                     return (d.hasAttribute('event') ? d.getAttribute('event') : '') + 
                            (d.hasAttribute('cond') ? '[' + d.getAttribute('cond') + ']' : '');
                 });
+
+    edgeGroup.append('title').text(xmlSerializer.serializeToString.bind(xmlSerializer));
 
 });
