@@ -16,12 +16,23 @@ function ScxmlViz(domAttachPoint,doc,width,height){
             filter(function(node){return node.localName === 'transition';}).
             filter(function(transitionNode){return transitionNode.hasAttribute('target');});    //TODO: find a way to render targetless transitions
 
+        var fakeTransitions = [];
+
         transitions.forEach(function(transitionNode){
             transitionNode.source = transitionNode.parentNode;
-            transitionNode.target = transitionNode.ownerDocument.getElementById(transitionNode.getAttribute('target'));
+            transitionNode.targets = transitionNode.getAttribute('target').trim().split(/\s+/)
+                                        .map(transitionNode.ownerDocument.getElementById.bind(transitionNode.ownerDocument));
+            transitionNode.target = transitionNode.targets[0];
+            transitionNode.targets.slice(1).forEach(function(target){
+                //make a fake transition node
+                var fakeTransitionNode = transitionNode.cloneNode(true);
+                transitionNode.parentNode.appendChild(fakeTransitionNode); 
+                fakeTransitionNode.source = transitionNode.parentNode;
+                fakeTransitionNode.target = target;
+            });
         });
 
-        return transitions;
+        return transitions.concat(fakeTransitions);
     }
 
     function traverseAndCountSubElements(node){
