@@ -198,17 +198,7 @@ function ScxmlViz(domAttachPoint,doc,width,height){
         return minDistanceCombo;
     }
 
-    function edgeLayout(reverseEdge,d){
-        //4 possibilities:
-            //source is basic, target is basic
-            //source is composite, target is composite
-            //source is basic, target is composite
-            //source is composite, target is basic
-        //either way, pick the closest edge, and aim for the center.
-        //left-of, right of, above, below, contains. pick the center point on the closest edge.
-        //ah, edge routing... we also want to minimize edge crossings, so...
-        //TODO: deal with the special case of looping back to ourself
-
+    function getEdgeD(reverseEdge,d){
         var points = getSourceAndDest(d,5);
         var sourceX = points[0][0], 
             sourceY = points[0][1], 
@@ -221,6 +211,52 @@ function ScxmlViz(domAttachPoint,doc,width,height){
         return reverseEdge ? 
             "M" + destX + "," + destY + "A" + dr + "," + dr + " 0 0,1 " + sourceX  + "," + sourceY : 
             "M" + sourceX + "," + sourceY + "A" + dr + "," + dr + " 0 0,0 " + destX + "," + destY;
+    }
+
+    function getEdgeToSelfD(d){
+        //debugger;
+        if(d.isParent){
+            var source = [d.x + 3 * d.dx/4, d.y];     //top
+            var dest = [d.x + d.dx - padding, d.y + d.dy/4];     //right
+            var ctrlPt1 = [d.x + 7 * d.dx/8, d.y - d.dy/4];
+            var ctrlPt2 = [d.x + 9 * d.dx/8, d.y + d.dy/8];
+        }else if(d.localName === 'history'){
+            throw new Error('History state should not be source and target of transition.');
+        }else{
+            var x = getInnerXCoordForBasicRectNode(d) + d.x;
+            var y = getInnerYCoordForBasicRectNode(d) + d.y;
+
+            var dx = basicWidth/2;
+            var dy = basicHeight/2;
+
+            source = [x + dx,y];                 //top
+            dest = [x + basicWidth,y + dy];      //right
+
+            ctrlPt1 = [x + dx, y - basicHeight * 5];
+            ctrlPt2 = [x + basicWidth * 6,y + dy];
+        }
+
+        
+        return "M" + source[0] + "," + source[1] + 
+                "C" + ctrlPt1[0] + "," + ctrlPt1[1] + " " +
+                ctrlPt2[0] + "," + ctrlPt2[1] + " " + 
+                dest[0] + "," + dest[1];
+    }
+
+    function edgeLayout(reverseEdge,d){
+        //4 possibilities:
+            //source is basic, target is basic
+            //source is composite, target is composite
+            //source is basic, target is composite
+            //source is composite, target is basic
+        //either way, pick the closest edge, and aim for the center.
+        //left-of, right of, above, below, contains. pick the center point on the closest edge.
+        //ah, edge routing... we also want to minimize edge crossings, so...
+        //TODO: deal with the special case of looping back to ourself
+
+        return d.source === d.target ?
+                getEdgeToSelfD(d.source) :
+                getEdgeD(reverseEdge,d);
     }
 
 
