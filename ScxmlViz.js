@@ -2,6 +2,25 @@ function ScxmlViz(domAttachPoint,doc,width,height){
     var STATE_NAMES = ['scxml','state','parallel','final','history'];
     var scxmlNs = "http://www.w3.org/2005/07/scxml";
 
+    function getElementByIdWrapper(xmldoc, myId) {
+        //this funciton is necessary to allow getElementById to work on xml documents in firefox
+
+        //first try the regular way
+        var toReturn = xmldoc.getElementById(myId);
+
+        if(toReturn === null){
+            //try the firefox way
+            toReturn = xmldoc.evaluate(
+                            '//*[@id="'+myId+'"]', 
+                            xmldoc, 
+                            null,
+                            XPathResult.FIRST_ORDERED_NODE_TYPE, 
+                            null).singleNodeValue;
+        }
+
+        return toReturn;
+    }
+
     function getChildStates(state){
         return d3.selectAll(state.childNodes)[0].
             filter(function(n){return n.nodeType === 1;}).
@@ -21,8 +40,11 @@ function ScxmlViz(domAttachPoint,doc,width,height){
         transitions.forEach(function(transitionNode){
             transitionNode.source = transitionNode.parentNode;
             transitionNode.targets = transitionNode.getAttribute('target').trim().split(/\s+/)
-                                        .map(transitionNode.ownerDocument.getElementById.bind(transitionNode.ownerDocument));
+                                        .map(getElementByIdWrapper.bind(null,transitionNode.ownerDocument));
             transitionNode.target = transitionNode.targets[0];
+
+            if(!transitionNode.target) throw new Error("Unable to find target for transition node.");
+
             transitionNode.targets.slice(1).forEach(function(target){
                 //make a fake transition node
                 var fakeTransitionNode = transitionNode.cloneNode(true);
@@ -274,7 +296,7 @@ function ScxmlViz(domAttachPoint,doc,width,height){
 
     var nodes = treemap.nodes(doc.documentElement);
     var links = getTransitionsFromStates(nodes);
-    treemap.links(links);
+    //treemap.links(links);     //no reason to set links for this kind of layout
 
     var cell = svg.selectAll("g")
             .data(nodes)
