@@ -14,7 +14,7 @@
      limitations under the License.
 */
 
-function ScxmlViz(domAttachPoint,doc,width,height){
+function ScxmlViz(domAttachPoint,doc,width,height,options){
     var STATE_NAMES = ['scxml','state','parallel','final','history'];
     var scxmlNs = "http://www.w3.org/2005/07/scxml";
 
@@ -423,30 +423,32 @@ function ScxmlViz(domAttachPoint,doc,width,height){
                 .attr('class','transition')
                 .attr("xlink:href",function(d,i){return '#transition' + i;});
 
-    var transitionLabels = edgeGroup.append('text')
-                .attr('class','transitionLabel')
-                .attr('dy','1em')
-                .append('textPath')
-                .attr("xlink:href",function(d,i){
-                    var points = getSourceAndDest(d,5);
-                    if(points[1][0] < points[0][0]){
-                        return '#reverseTransition' + i;
-                    }else{
-                        return '#transition' + i;
-                    }
-                })
-                .attr("startOffset",function(d){
-                    var points = getSourceAndDest(d,5);
-                    if(points[1][0] < points[0][0]){
-                        return 30;  //a bit extra because of marker
-                    }else{
-                        return 10;
-                    }
-                })
-                .text(function(d){
-                    return (d.hasAttribute('event') ? d.getAttribute('event') : '') + 
-                           (d.hasAttribute('cond') ? '[' + d.getAttribute('cond') + ']' : '');
-                });
+    if(!options || !options.hideTransitionLabels){
+        var transitionLabels = edgeGroup.append('text')
+                    .attr('class','transitionLabel')
+                    .attr('dy','1em')
+                    .append('textPath')
+                    .attr("xlink:href",function(d,i){
+                        var points = getSourceAndDest(d,5);
+                        if(points[1][0] < points[0][0]){
+                            return '#reverseTransition' + i;
+                        }else{
+                            return '#transition' + i;
+                        }
+                    })
+                    .attr("startOffset",function(d){
+                        var points = getSourceAndDest(d,5);
+                        if(points[1][0] < points[0][0]){
+                            return 30;  //a bit extra because of marker
+                        }else{
+                            return 10;
+                        }
+                    })
+                    .text(function(d){
+                        return (d.hasAttribute('event') ? d.getAttribute('event') : '') + 
+                               (d.hasAttribute('cond') ? '[' + d.getAttribute('cond') + ']' : '');
+                    });
+    }
 
     edgeGroup.append('title').text(xmlSerializer.serializeToString.bind(xmlSerializer));
 
