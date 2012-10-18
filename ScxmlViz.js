@@ -176,15 +176,15 @@ function ScxmlViz(domAttachPoint,doc,width,height,options){
                 [d.x + dx, d.y],     //top-center
                 [d.x + dx/2, d.y],
                 [d.x + dx + dx/2, d.y],
-                [d.x + dx, d.y + d.dy],    //bottom-center
-                [d.x + dx/2, d.y + d.dy],    
-                [d.x + dx + dx/2, d.y + d.dy],   
+                [d.x + dx, d.y + d.dy - padding],    //bottom-center
+                [d.x + dx/2, d.y + d.dy - padding],    
+                [d.x + dx + dx/2, d.y + d.dy - padding],   
                 [d.x, d.y + dy],     //left-center
                 [d.x, d.y + dy/2],    
                 [d.x, d.y + dy + dy/2],     
-                [d.x + d.dx, d.y + dy],     //right-center
-                [d.x + d.dx, d.y + dy/2],     
-                [d.x + d.dx, d.y + dy + dy/2]    
+                [d.x + d.dx - padding, d.y + dy],     //right-center
+                [d.x + d.dx - padding, d.y + dy/2],     
+                [d.x + d.dx - padding, d.y + dy + dy/2]    
             ]; 
         }else if(d.localName === 'history'){
             var x = getInnerXCoordForBasicRectNode(d) + d.x,
