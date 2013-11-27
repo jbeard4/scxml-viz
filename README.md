@@ -7,8 +7,8 @@ Command-Line Usage
 
 Graphics may be generated be generated from the command-line with PhantomJS. 
 
-./render.sh in.scxml out.pdf [format]
+  ./render.sh in.scxml out.pdf [format]
 
 Here's an example of how it may be used:
 
-./render.sh ../scxml-test-framework/test/parallel/test3.scxml out.pdf A4
+  ./render.sh ../scxml-test-framework/test/parallel/test3.scxml out.pdf A4
