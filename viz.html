@@ -7,16 +7,6 @@
         <script type="text/javascript" src="lib/es5-shim.js"></script>
         <script type="text/javascript">
 
-            HTMLCollection.prototype.slice = function(){
-              return Array.prototype.slice.call( this );
-            };
-
-            HTMLCollection.prototype.forEach = function(fn){
-              for(var i = 0; i < this.length; i++){
-                fn(this.item(i));
-              }
-            };
-
             var hash = window.location.hash,
                 dateLastModified = 0;
 
