@@ -1,35 +1,34 @@
 <html>
     <head>
         <link rel="stylesheet" href="ScxmlViz.css"></link>
-        <script src="http://d3js.org/d3.v2.js"></script>
-        <script src="http://code.jquery.com/jquery-1.8.2.js"></script>
-        <script src="ScxmlViz.js"></script>
-        <script>
+        <script type="text/javascript" src="http://d3js.org/d3.v2.js"></script>
+        <script type="text/javascript" src="http://code.jquery.com/jquery-1.8.2.js"></script>
+        <script type="text/javascript" src="ScxmlViz.js"></script>
+        <script type="text/javascript" src="lib/es5-shim.js"></script>
+        <script type="text/javascript">
+
+            HTMLCollection.prototype.slice = function(){
+              return Array.prototype.slice.call( this );
+            };
+
+            HTMLCollection.prototype.forEach = function(fn){
+              for(var i = 0; i < this.length; i++){
+                fn(this.item(i));
+              }
+            };
+
             var hash = window.location.hash,
                 dateLastModified = 0;
 
             if(!hash){
                 alert('Please enter the name of an SCXML file to render in the local directory as a URL fragment');
             }else{
-                function poll(){
-                    $.get(hash.slice(1),function(doc,textStatus,jqXhr){
-                        var lastModified = Date.parse(jqXhr.getResponseHeader('Last-Modified'));
-                        if(lastModified > dateLastModified){
-                            //file has been updated. Re-render
-                            dateLastModified = lastModified;
-                            try {
-                                var body = $('body');
-                                body.empty(); 
-                                ScxmlViz(body[0],doc,body.width(),body.height());
-                            }catch(e){
-                                console.error(e);
-                            }
-                        }
-
-                        setTimeout(poll,1000);
-                    },'xml');
-                }
-                poll();
+                console.log('hash',hash);
+                $.get(hash.slice(1), function(doc,textStatus,jqXhr){
+                    var body = $('body');
+                    body.empty(); 
+                    ScxmlViz(body[0],doc,body.width(),body.height());
+                },'xml');
             }
         </script>
         <style type="text/css">

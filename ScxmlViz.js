@@ -14,6 +14,18 @@
      limitations under the License.
 */
 
+//monkey-patch HTMLCollection prototypes for better portability
+HTMLCollection.prototype.slice = HTMLCollection.prototype.slice || function(){
+  return Array.prototype.slice.call( this );
+};
+
+HTMLCollection.prototype.forEach = HTMLCollection.prototype.forEach || function(fn){
+  for(var i = 0; i < this.length; i++){
+    fn(this.item(i));
+  }
+};
+
+
 function ScxmlViz(domAttachPoint,doc,width,height,options){
     var STATE_NAMES = ['scxml','state','parallel','final','history'];
     var scxmlNs = "http://www.w3.org/2005/07/scxml";
@@ -140,13 +152,11 @@ function ScxmlViz(domAttachPoint,doc,width,height,options){
 
     var defs = svg.append("svg:defs");
 
-    defs.selectAll("marker")
-        .data(["suit", "licensing", "resolved"])
-      .enter().append("svg:marker")
+    defs.append("svg:marker")
         .attr("id", 'transitionMarker')
         .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 15)
-        .attr("refY", -1.5)
+        .attr("refX", 10)
+        .attr("refY", 0)
         .attr("markerWidth", 6)
         .attr("markerHeight", 6)
         .attr("orient", "auto")
