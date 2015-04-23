@@ -1,4 +1,5 @@
-** We have developed a new SCXML visualization library: [https://github.com/JacobeanRnD/SCHVIZ](SCHVIZ) **
+
+**We have developed a new SCXML visualization library: [SCHVIZ](https://github.com/JacobeanRnD/SCHVIZ)**
 
 A d3-based library for visualizing SCXML with SVG.
 
